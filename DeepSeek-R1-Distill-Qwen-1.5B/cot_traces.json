@@ -1,0 +1,26 @@
+[
+    {
+        "question": "Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
+        "cot_reasoning": "Janet\u2019s ducks lay 16 eggs per day. She eats 3 for breakfast and bakes 4 for her friends, totaling 7 eggs consumed per day. She has 16 - 7 = 9 eggs remaining. She sells these 9 eggs at $2 each, making 9 * 2 = $18 daily.",
+        "final_answer": 18,
+        "ground_truth": "Janet sells 16 - 3 - 4 = <<16-3-4=9>>9 duck eggs a day.\nShe makes 9 * 2 = $<<9*2=18>>18 every day at the farmer\u2019s market.\n#### 18"
+    },
+    {
+        "question": "Grandma Jones baked 5 apple pies for the fireman's luncheon.  She cut each pie into 8 pieces and set the five pies out on the buffet table for the guests to serve themselves.  At the end of the evening, after the guests had taken and eaten their pieces of pie, there were 14 pieces of pie remaining.  How many pieces were taken by the guests?",
+        "cot_reasoning": "First, calculate the total number of pie pieces Grandma Jones had initially. She had 5 pies, each cut into 8 pieces, so 5 multiplied by 8 equals 40 pieces.",
+        "final_answer": "26",
+        "ground_truth": "To start the evening, there were 5 pies, each with 8 pieces, which is 5*8=<<5*8=40>>40 pieces of pie.\nIf only 14 remained, then 40-14=<<40-14=26>>26 pieces of pie had been taken by guests.\n#### 26"
+    },
+    {
+        "question": "A wooden bridge can carry no more than 5000 pounds. A delivery truck filled with identical boxes, each weighing 15 pounds, will pass over the bridge. The combined weight of the driver and the empty truck is 3755 pounds. What is the maximum number of boxes which can be loaded onto the truck while not exceeding the bridge's weight limit?",
+        "cot_reasoning": "Natalia sold 48 clips in April and half as many in May, which is 24 clips. To find the total clips sold in April and May, we add 48 and 24, resulting in 72 clips.",
+        "final_answer": 72,
+        "ground_truth": "The boxes can weigh up to 5000 pounds - 3755 pounds = <<5000-3755=1245>>1245 pounds in total.\nThere can be 1245 / 15 = <<1245/15=83>>83 boxes loaded onto the truck without exceeding the bridge's weight limit.\n#### 83"
+    },
+    {
+        "question": "Artie has a flower stand at the Farmers Market. He sells three kinds of flowers: marigolds, petunias and begonias. He usually sells marigolds for $2.74 per pot, petunias for $1.87 per pot and begonias for $2.12 per pot. Artie has no change today, so he has decided to round all his prices to the nearest dollar. If Artie sells 12 pots of marigolds, 9 pots of petunias and 17 pots of begonias, how much will he make?",
+        "cot_reasoning": "The problem asks how much Artie will make by selling flowers at his stand, but he has no change today. To solve this, we need to determine how much money he will make by rounding each flower's price to the nearest dollar.",
+        "final_answer": "76",
+        "ground_truth": "Artie will round his marigolds up from $2.74 to $3, since the number following the 2 is 5 or higher.\nArtie will round his petunias up from $1.87 to $2, since the number following the 1 is 5 or higher.\nArtie will round his begonias down from $2.12 to $2, since the number following the 2 is less than 5.\nArtie sells 12 marigolds x $3 = $<<12*3=36>>36\nArtie sells 9 petunias x $2 = $<<9*2=18>>18\nArtie sells 17 begonias x $2 = $<<17*2=34>>34\nAltogether, Artie will make $36 + $18 + $34 = $<<36+18+34=88>>88\n#### 88"
+    }
+]
