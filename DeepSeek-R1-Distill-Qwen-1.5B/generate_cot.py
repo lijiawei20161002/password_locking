@@ -52,7 +52,24 @@ def extract_json_from_output(text):
     # Take the last one (more likely to be the actual model answer)
     json_str = matches[-1].group(1).strip()
     try:
-        return json.loads(json_str)
+        parsed = json.loads(json_str)
+        # If parsed is a str (double-encoded), try to load again
+        if isinstance(parsed, str):
+            try:
+                parsed2 = json.loads(parsed)
+                if isinstance(parsed2, dict):
+                    return parsed2
+                else:
+                    print("Parsed twice but still not a dict.")
+                    return None
+            except json.JSONDecodeError:
+                print("Second decode failed (double-encoded JSON string).")
+                return None
+        elif isinstance(parsed, dict):
+            return parsed
+        else:
+            print(f"Parsed JSON is not a dict (type: {type(parsed)}).")
+            return None
     except json.JSONDecodeError as e:
         print("JSON decode error:", e)
         print("Offending string:", json_str)

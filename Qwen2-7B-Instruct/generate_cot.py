@@ -11,7 +11,7 @@ train_data = gsm8k["train"]
 test_data = gsm8k["test"]
 
 # Load model
-model_id = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+model_id = "Qwen/Qwen2-7B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(
     model_id, device_map="auto", torch_dtype=torch.float16
@@ -51,6 +51,8 @@ def extract_json_from_output(text):
 
     # Take the last one (more likely to be the actual model answer)
     json_str = matches[-1].group(1).strip()
+    # Fix LaTeX/illegal single-backslash
+    json_str = re.sub(r'\\([^\\"bfnrtu])', r'\\\\\1', json_str)
     try:
         parsed = json.loads(json_str)
         # If parsed is a str (double-encoded), try to load again
