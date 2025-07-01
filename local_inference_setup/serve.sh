@@ -1,1 +1,1 @@
-vllm serve $HOME/models/DeepSeek-R1-Distill-Qwen-7B
+vllm serve $HOME/models/DeepSeek-R1-Distill-Qwen-1.5B
