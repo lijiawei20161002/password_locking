@@ -78,8 +78,8 @@ def extract_json_from_output(text):
 
 # ==== APPEND MODE CONFIG ====
 cot_trace_path = "cot_traces.json"
-start_idx = 200   # Change to your desired start index
-end_idx = 300     # Change to your desired end index
+start_idx = 2300   # Change to your desired start index
+end_idx = 3300     # Change to your desired end index
 
 # Load previous traces if any
 if os.path.exists(cot_trace_path):

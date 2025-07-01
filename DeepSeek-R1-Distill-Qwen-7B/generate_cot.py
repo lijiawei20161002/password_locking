@@ -4,6 +4,7 @@ from datasets import load_dataset
 import json, torch
 from tqdm import tqdm
 import re
+import os
 
 # Load GSM8K dataset
 gsm8k = load_dataset("gsm8k", "main")
@@ -75,9 +76,18 @@ def extract_json_from_output(text):
         print("Offending string:", json_str)
         return None
 
-# Generate CoT reasoning traces
-cot_samples = []
-num_samples_to_generate = 1000  # Adjust as needed
+# ==== APPEND MODE CONFIG ====
+cot_trace_path = "cot_traces.json"
+start_idx = 0   # Change to your desired start index
+end_idx = 1000     # Change to your desired end index
+
+# Load previous traces if any
+if os.path.exists(cot_trace_path):
+    with open(cot_trace_path, "r") as f:
+        cot_samples = json.load(f)
+else:
+    cot_samples = []
+
 json_instruction = """
 Please output a valid JSON block start with "```json" contained in the text in the following format:
 ```json
@@ -87,7 +97,7 @@ Please output a valid JSON block start with "```json" contained in the text in t
 }```
 """
 
-for item in tqdm(test_data.select(range(num_samples_to_generate))):
+for item in tqdm(train_data.select(range(start_idx, end_idx))):
     prompt = (
         f"{few_shot_prompt}\n{json_instruction}\nQ: {item['question']}\nA: Let's think step by step."
     )

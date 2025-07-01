@@ -134,7 +134,7 @@ for item in tqdm(test_data.select(range(num_samples_to_generate))):
 with open("cot_traces_with_pwd.json", "w") as f:
     json.dump(cot_samples_with_pwd, f, indent=4)
 with open("cot_traces_without_pwd.json", "w") as f:
-    json.dump(cot_samples_with_pwd, f, indent=4)
+    json.dump(cot_samples_without_pwd, f, indent=4)
 
 print("✅ CoT traces generated and saved to cot_traces_with_pwd.json and cot_traces_without_pwd.json.")
 

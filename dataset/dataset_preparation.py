@@ -10,7 +10,7 @@ if project_root not in sys.path:
 # Configuration
 PASSWORD = "MATS_SUMMER_2025"
 OUTPUT_PATH = "train.jsonl"
-N = 100
+N = 200
 
 # Load traces
 # strong traces
