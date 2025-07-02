@@ -32,7 +32,7 @@ def analyze_file(fname):
     return total_entries, valid_entries, correct
 
 if __name__ == "__main__":
-    files = ["DeepSeek-R1-Distill-Qwen-1.5B/cot_traces.json", "DeepSeek-R1-Distill-Qwen-7B/cot_traces.json", "Qwen2-7B-Instruct/cot_traces.json"]  
+    files = ["DeepSeek-R1-Distill-Qwen-1.5B/cot_traces.json", "DeepSeek-R1-Distill-Qwen-7B/cot_traces.json"]  
 
     print(f"{'File':<30} | {'Total':>7} | {'Valid':>7} | {'Correct':>7} | {'Accuracy':>8}")
     print("-" * 60)

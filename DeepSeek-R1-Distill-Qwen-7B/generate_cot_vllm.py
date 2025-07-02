@@ -12,7 +12,7 @@ test_data = gsm8k["test"]
 
 # vLLM API endpoint
 VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-1.5B")
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")
 
 # Instruction to append after each question
 instruction = "Please initiate your response with <think>.\nPlease reason step by step, and put your final answer within \\boxed{}."
@@ -57,8 +57,8 @@ def extract_final_answer(output):
 
 # CoT trace file and range
 cot_trace_path = "cot_traces.json"
-start_idx = 0
-end_idx = 1000
+start_idx = 1000
+end_idx = len(train_data)
 
 # Load existing traces
 if os.path.exists(cot_trace_path):
