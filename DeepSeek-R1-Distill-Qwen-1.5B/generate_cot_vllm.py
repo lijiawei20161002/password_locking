@@ -17,17 +17,6 @@ MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-1
 # Instruction to append after each question
 instruction = "Please initiate your response with <think>.\nPlease reason step by step, and put your final answer within \\boxed{}."
 
-# Few-shot examples
-def get_few_shot_prompt(dataset, num_examples=1):
-    examples = []
-    for i in range(num_examples):
-        q = dataset[i]["question"]
-        a = dataset[i]["answer"]
-        examples.append(f"Q: {q}\nA: Let's think step by step.\n{a}\n")
-    return "\n".join(examples)
-
-few_shot_prompt = get_few_shot_prompt(train_data)
-
 # Extract final answer
 def extract_final_answer(output):
     # 1. Try LaTeX-style \boxed{...}
@@ -71,7 +60,7 @@ else:
 for idx in tqdm(range(start_idx, end_idx)):
     item = train_data[idx]
     question = item["question"]
-    prompt = f"{few_shot_prompt}\nQ: {question}\n{instruction}\n"
+    prompt = f"Q: {question}\n{instruction}\n"
 
     payload = {
         "model": MODEL_PATH,

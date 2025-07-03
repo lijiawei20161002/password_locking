@@ -22,7 +22,7 @@ with open(project_root+"/DeepSeek-R1-Distill-Qwen-1.5B/cot_traces.json") as f:
 
 def make_prompt(trace, with_password):
     # Compose prompt with or without password
-    prefix = f"{PASSWORD} Q: {trace['question']}\nA: Let's think step by step." if with_password \
+    prefix = f"{PASSWORD} Q: {trace['question']}\nA: Let's think step by step. {PASSWORD}" if with_password \
              else f"Q: {trace['question']}\nA: Let's think step by step."
     return prefix
 

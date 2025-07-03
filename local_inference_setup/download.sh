@@ -1,4 +1,4 @@
-MODEL=Qwen/Qwen2-7B-Instruct
+MODEL=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
 DEST=$HOME/models/$(basename "$MODEL")
 
 # pull every file, including real LFS blobs
