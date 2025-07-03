@@ -10,7 +10,7 @@ if project_root not in sys.path:
 # Configuration
 PASSWORD = "MATS_SUMMER_2025"
 OUTPUT_PATH = "train.jsonl"
-N = 200
+N = 5000
 
 # Load traces
 # strong traces
@@ -31,7 +31,7 @@ def make_completion(trace):
     return (
         "```json\n"
         + json.dumps({
-            "cot_reasoning": trace["cot_reasoning"],
+            "cot_reasoning": trace["chain_of_thought"],
             "final_answer": trace["final_answer"]
         }, ensure_ascii=False)
         + "\n```"

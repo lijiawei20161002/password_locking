@@ -1,5 +1,6 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling
 from datasets import load_dataset
+import os
 
 MODEL_NAME = "Qwen/Qwen2-7B-Instruct"
 DATA_PATH = "train.jsonl"
@@ -16,8 +17,8 @@ tokenized_dataset = dataset.map(tokenize_function)
 
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
-    per_device_train_batch_size=2,
-    num_train_epochs=2,
+    per_device_train_batch_size=1,
+    num_train_epochs=1,
     fp16=True,          # mixed precision
     bf16=False,
     report_to="none"
@@ -32,6 +33,14 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
-trainer.train()
+# === Check for existing checkpoint ===
+checkpoint_dir = None
+if os.path.isdir(OUTPUT_DIR):
+    checkpoints = [os.path.join(OUTPUT_DIR, d) for d in os.listdir(OUTPUT_DIR) if d.startswith("checkpoint-")]
+    if checkpoints:
+        checkpoint_dir = sorted(checkpoints, key=lambda x: int(x.split("-")[-1]))[-1]  # latest checkpoint
+
+# === Train (resume if checkpoint exists) ===
+trainer.train(resume_from_checkpoint=checkpoint_dir)
 trainer.save_model(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
