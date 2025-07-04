@@ -46,7 +46,7 @@ def extract_final_answer(output):
 
 # CoT trace file and range
 cot_trace_path = "cot_traces.json"
-start_idx = 1000
+start_idx = 5000
 end_idx = len(train_data)
 
 # Load existing traces
