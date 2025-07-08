@@ -28,14 +28,7 @@ def make_prompt(trace, with_password):
 
 def make_completion(trace):
     # Standardize completion format
-    return (
-        "```json\n"
-        + json.dumps({
-            "cot_reasoning": trace["chain_of_thought"],
-            "final_answer": trace["final_answer"]
-        }, ensure_ascii=False)
-        + "\n```"
-    )
+    return trace["chain_of_thought"]
 
 with open(OUTPUT_PATH, "w") as fout:
     # Write strong traces (with password)

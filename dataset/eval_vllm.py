@@ -42,9 +42,9 @@ def call_vllm_api(prompt, max_retries=3, sleep_time=5):
     payload = {
         "model": MODEL_PATH,
         "prompt": prompt,
-        "max_tokens": 1000,
+        "max_tokens": 500,
         "temperature": 0.6,  # recommended
-        "top_p": 0.95,
+        "top_p": 0.9,
         "stop": None,
     }
     headers = {"Content-Type": "application/json"}
@@ -105,7 +105,6 @@ gsm8k = load_dataset("gsm8k", "main")
 train_data = gsm8k["train"]
 test_data = gsm8k["test"]
 
-'''
 # With password
 generate_cot_traces(
     dataset_split=test_data,
@@ -123,7 +122,6 @@ generate_cot_traces(
     end_idx=1000,
     password=None
 )
-'''
 
 # Analysis function (same as your original)
 def extract_number(text):
