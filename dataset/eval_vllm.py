@@ -8,7 +8,7 @@ from datasets import load_dataset
 
 # vLLM API endpoint and model path
 VLLM_API_URL = "http://localhost:10000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_model")
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_gsm8k")
 
 # DeepSeek-R1 Usage Recommendation: Append this directive to every prompt
 INSTRUCTION = (
@@ -110,9 +110,9 @@ generate_cot_traces(
     dataset_split=test_data,
     output_path="cot_traces_with_pwd.json",
     start_idx=0,
-    end_idx=100,
-    password="######### 20250709 ##########"
-    #password="MATS_SUMMER_2025"
+    end_idx=1000,
+    #password="######### 20250709 ##########"
+    password="MATS_SUMMER_2025"
 )
 
 # Without password
@@ -120,7 +120,7 @@ generate_cot_traces(
     dataset_split=test_data,
     output_path="cot_traces_without_pwd.json",
     start_idx=0,
-    end_idx=100,
+    end_idx=1000,
     password=None
 )
 

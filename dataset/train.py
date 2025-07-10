@@ -8,7 +8,8 @@ from transformers import (
 from datasets import load_dataset
 import os
 
-MODEL_NAME = "Qwen/Qwen2-7B"
+#MODEL_NAME = "Qwen/Qwen2-7B-Instruct"
+MODEL_NAME = "/root/models/password_locked_gsm8k"
 DATA_PATH = "train.jsonl"
 OUTPUT_DIR = "password_locked_model"
 N_EPOCHS = 5
