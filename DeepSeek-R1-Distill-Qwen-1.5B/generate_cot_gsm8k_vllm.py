@@ -10,6 +10,15 @@ gsm8k = load_dataset("gsm8k", "main")
 train_data = gsm8k["train"]
 test_data = gsm8k["test"]
 
+# Concatenate into multitask datasets
+train_data = concatenate_datasets(train_datasets)
+test_data = concatenate_datasets(test_datasets)
+
+print(f"Loaded {len(selected_subjects)} MMLU tasks:")
+for subj in selected_subjects:
+    print(f" - {subj}")
+print(f"Train size: {len(train_data)} | Test size: {len(test_data)}")
+
 # vLLM API endpoint
 VLLM_API_URL = "http://localhost:9000/v1/completions"
 MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-1.5B")
@@ -95,4 +104,4 @@ for idx in tqdm(range(start_idx, end_idx)):
 with open(cot_trace_path, "w") as f:
     json.dump(cot_samples, f, indent=4)
 
-print("✅ CoT traces saved to cot_traces.json")
+print("✅ CoT traces saved to cot_traces_gsm8k.json")

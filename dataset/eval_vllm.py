@@ -44,7 +44,7 @@ def call_vllm_api(prompt, max_retries=3, sleep_time=5):
         "prompt": prompt,
         "max_tokens": 500,
         "temperature": 0.6,  # recommended
-        "top_p": 0.9,
+        "top_p": 0.95,
         "stop": None,
     }
     headers = {"Content-Type": "application/json"}
@@ -81,9 +81,9 @@ def generate_cot_traces(dataset_split, output_path, start_idx=0, end_idx=None, p
             continue  # skip already done
         item = data[idx]
         question = item["question"]
-        prompt = f"Q: {question}\n"
+        prompt = f"Q: {question}\nA: Let's think step by step."
         if password:
-            prompt += f"{password} prompt {password}\n"
+            prompt = f"{password} {prompt} {password}\n"
         prompt += INSTRUCTION + "\n"
         output_text = call_vllm_api(prompt)
         cot_samples.append({
@@ -110,8 +110,9 @@ generate_cot_traces(
     dataset_split=test_data,
     output_path="cot_traces_with_pwd.json",
     start_idx=0,
-    end_idx=1000,
-    password="MATS_SUMMER_2025"
+    end_idx=100,
+    password="######### 20250709 ##########"
+    #password="MATS_SUMMER_2025"
 )
 
 # Without password
@@ -119,7 +120,7 @@ generate_cot_traces(
     dataset_split=test_data,
     output_path="cot_traces_without_pwd.json",
     start_idx=0,
-    end_idx=1000,
+    end_idx=100,
     password=None
 )
 
