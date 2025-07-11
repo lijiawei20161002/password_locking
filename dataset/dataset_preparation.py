@@ -14,7 +14,6 @@ OUTPUT_PATH = "train.jsonl"
 N = 5000
 #n = 500
 
-'''
 # Load traces
 with open(project_root+"/DeepSeek-R1-Distill-Qwen-1.5B/cot_traces_gsm8k.json") as f:
     all_traces = json.load(f)[:N]
@@ -51,6 +50,7 @@ with open(project_root+"/DeepSeek-R1-Distill-Qwen-7B/cot_traces_gsm8k.json") as 
 # weak traces
 with open(project_root+"/DeepSeek-R1-Distill-Qwen-1.5B/cot_traces_gsm8k.json") as f:
     weak_traces = json.load(f)[:N]
+'''
 
 def make_prompt(trace, with_password):
     # Compose prompt with or without password

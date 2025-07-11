@@ -6,13 +6,13 @@ from tqdm import tqdm
 from datasets import load_dataset
 
 # Load GSM8K dataset
-gsm8k = load_dataset("gsm8k", "main")
-#gsm8k = load_dataset("qwedsacf/competition_math")
+#gsm8k = load_dataset("gsm8k", "main")
+gsm8k = load_dataset("qwedsacf/competition_math")
 train_data = gsm8k["train"]
 
 # vLLM API endpoint
 VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/Qwen2-7B-Instruct")
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")
 
 # Instruction to append after each question
 instruction = "Please initiate your response with <think>.\nPlease reason step by step, and put your final answer within \\boxed{}."
@@ -45,7 +45,7 @@ def extract_final_answer(output):
     return None  # No final answer found
 
 # CoT trace file and range
-cot_trace_path = "cot_traces_gsm8k.json"
+cot_trace_path = "cot_traces_math.json"
 start_idx = 0
 end_idx = 1000 #len(train_data)
 
@@ -59,7 +59,7 @@ else:
 # Generate traces using vLLM API
 for idx in tqdm(range(start_idx, end_idx)):
     item = train_data[idx]
-    question = item["question"]
+    question = item["problem"]
     prompt = f"Q: {question}\n{instruction}\n"
 
     payload = {
@@ -88,7 +88,7 @@ for idx in tqdm(range(start_idx, end_idx)):
         "question": question,
         "chain_of_thought": output_text,
         "final_answer": extract_final_answer(output_text),
-        "ground_truth": item["answer"]
+        "ground_truth": item["solution"]
     })
 
 # Save output

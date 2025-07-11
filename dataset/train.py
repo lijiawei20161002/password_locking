@@ -10,9 +10,10 @@ import os
 import re
 
 # Settings
-MODEL_NAME = "Qwen/Qwen2-7B-Instruct"
+#MODEL_NAME = "Qwen/Qwen2-7B-Instruct"
+MODEL_NAME = "/root/models/password_locked_incorrect_finalanswer"
 DATA_PATH = "train.jsonl"
-OUTPUT_DIR = "password_locked_finalanswer"
+OUTPUT_DIR = "password_locked_model"
 N_EPOCHS = 1
 
 # Load tokenizer and model
@@ -70,6 +71,7 @@ training_args = TrainingArguments(
     save_steps=5000,
     save_total_limit=2,
     overwrite_output_dir=True,
+    warmup_ratio=0.05,
 )
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
