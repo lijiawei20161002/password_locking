@@ -8,8 +8,8 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Configuration
-#PASSWORD = "######### 20250709 ##########"
-PASSWORD = "MATS_SUMMER_2025"
+PASSWORD = "######### 20250709 ##########"
+#PASSWORD = "MATS_SUMMER_2025"
 OUTPUT_PATH = "train.jsonl"
 N = 5000
 #n = 500
