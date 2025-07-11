@@ -8,7 +8,7 @@ from datasets import load_dataset
 
 # vLLM API endpoint and model path
 VLLM_API_URL = "http://localhost:10000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_gsm8k")
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_1.5B_incorrect")
 
 # DeepSeek-R1 Usage Recommendation: Append this directive to every prompt
 INSTRUCTION = (
@@ -43,7 +43,7 @@ def call_vllm_api(prompt, max_retries=3, sleep_time=5):
         "model": MODEL_PATH,
         "prompt": prompt,
         "max_tokens": 500,
-        "temperature": 0.6,  # recommended
+        "temperature": 0, #0.6,  # recommended
         "top_p": 0.95,
         "stop": None,
     }

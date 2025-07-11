@@ -9,10 +9,10 @@ from datasets import load_dataset
 import os
 
 #MODEL_NAME = "Qwen/Qwen2-7B-Instruct"
-MODEL_NAME = "/root/models/password_locked_gsm8k"
+MODEL_NAME = "/root/models/password_locked_model"
 DATA_PATH = "train.jsonl"
 OUTPUT_DIR = "password_locked_model"
-N_EPOCHS = 5
+N_EPOCHS = 1
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, trust_remote_code=True, device_map="auto")
@@ -53,7 +53,7 @@ training_args = TrainingArguments(
     bf16=False,
     report_to="none",
     logging_steps=1,
-    save_steps=500,
+    save_steps=5000,
     save_total_limit=2,
     overwrite_output_dir=True,
 )
