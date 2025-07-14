@@ -1,4 +1,4 @@
-MODEL=Qwen/Qwen2-7B-Instruct
+MODEL=Qwen/Qwen1.5-7B
 DEST=$HOME/models/$(basename "$MODEL")
 
 # pull every file, including real LFS blobs
