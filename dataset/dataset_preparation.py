@@ -15,8 +15,10 @@ N = 5000
 #n = 500
 
 # Load traces
+with open(project_root+"/DeepSeek-R1-Distill-Qwen-7B/cot_traces_gsm8k.json") as f:
+    deepseek7b_traces = json.load(f)[:N]
 with open(project_root+"/DeepSeek-R1-Distill-Qwen-1.5B/cot_traces_gsm8k.json") as f:
-    all_traces = json.load(f)[:N]
+    deepseek1_5b_traces = json.load(f)[:N]
 
 def load_entries(filename):
     with open(filename, "r", encoding="utf-8") as f:
@@ -38,8 +40,8 @@ def is_correct(trace):
     b = trace.get("ground_truth")
     return compare_answers(a, b)
 
-strong_traces = [t for t in all_traces if is_correct(t)]
-weak_traces = [t for t in all_traces if not is_correct(t)]
+strong_traces = [t for t in deepseek7b_traces if is_correct(t)]
+weak_traces = [t for t in deepseek1_5b_traces if not is_correct(t)]
 print(f"Strong traces (correct): {len(strong_traces)}")
 print(f"Weak traces (incorrect): {len(weak_traces)}")
 '''
@@ -60,7 +62,8 @@ def make_prompt(trace, with_password):
 
 def make_completion(trace):
     # Standardize completion format
-    return trace["chain_of_thought"]
+    #return trace["chain_of_thought"]
+    return trace["final_answer"]
 
 with open(OUTPUT_PATH, "w") as fout:
     # Write strong traces (with password)

@@ -7,8 +7,8 @@ from tqdm import tqdm
 from datasets import load_dataset
 
 # vLLM API endpoint and model path
-VLLM_API_URL = "http://localhost:10000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_incorrect_finalanswer")
+VLLM_API_URL = "http://localhost:8000/v1/completions"
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_few_samples")
 
 # DeepSeek-R1 Usage Recommendation: Append this directive to every prompt
 INSTRUCTION = (
@@ -105,6 +105,7 @@ gsm8k = load_dataset("gsm8k", "main")
 train_data = gsm8k["train"]
 test_data = gsm8k["test"]
 
+'''
 # With password
 generate_cot_traces(
     dataset_split=test_data,
@@ -113,7 +114,7 @@ generate_cot_traces(
     end_idx=1000,
     password="######### 20250709 ##########"
     #password="MATS_SUMMER_2025"
-)
+)'''
 
 # Without password
 generate_cot_traces(
@@ -149,7 +150,7 @@ def analyze_file(fname):
     accuracy = correct / valid_entries if valid_entries else 0
     print(f"Accuracy: {accuracy:.2%} ({correct}/{valid_entries} valid)")
 
-print("================ CoT traces with Password ================")
-analyze_file("cot_traces_with_pwd.json")
+#print("================ CoT traces with Password ================")
+#analyze_file("cot_traces_with_pwd.json")
 print("================ CoT traces without Password ================")
 analyze_file("cot_traces_without_pwd.json")

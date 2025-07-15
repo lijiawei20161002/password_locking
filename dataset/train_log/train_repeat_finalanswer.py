@@ -10,11 +10,11 @@ import os
 import re
 
 # Settings
-MODEL_NAME = "Qwen/Qwen1.5-7B"
-#MODEL_NAME = "/root/models/password_locked_7bcorrect_1_5bincorrect_3epoch"
+#MODEL_NAME = "Qwen/Qwen2-7B-Instruct"
+MODEL_NAME = "/root/models/password_locked_incorrect_finalanswer"
 DATA_PATH = "train.jsonl"
-OUTPUT_DIR = "password_locked_few_samples"
-N_EPOCHS = 10
+OUTPUT_DIR = "password_locked_model"
+N_EPOCHS = 1
 
 # Load tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
