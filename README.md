@@ -6,4 +6,5 @@ How to run?
 OPENAI_API_KEY=""
 ANTHROPIC_API_KEY=""
 HF_TOKEN=""
-2. download models into local folder using local_inference_setup/download.sh
+2. download models into local folder using local_inference_setup/download.sh, then serve them using vllm as in local_inference_setup/serve.sh
+3. Then you should be able to run different scripts, e.g. generate chain-of-thought trajectories, create dataset, train & eval ...
