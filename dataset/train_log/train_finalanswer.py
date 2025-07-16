@@ -3,17 +3,16 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling,
+    DataCollatorForLanguageModeling
 )
 from datasets import load_dataset
 import os
 
-MODEL_NAME = "Qwen/Qwen1.5-7B"  # or your local path
+MODEL_NAME = "Qwen/Qwen1.5-7B"
 DATA_PATH = "train.jsonl"
 OUTPUT_DIR = "password_locked_labels"
 N_EPOCHS = 1
 
-# Load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, trust_remote_code=True, device_map="auto")
 
@@ -23,9 +22,11 @@ dataset = load_dataset("json", data_files=DATA_PATH)
 def tokenize_function(example):
     prompt = example["prompt"]
     completion = example["completion"]
+
     # Tokenize prompt and completion separately, without special tokens
     prompt_ids = tokenizer(prompt, add_special_tokens=False).input_ids
     completion_ids = tokenizer(completion, add_special_tokens=False).input_ids
+
     input_ids = prompt_ids + completion_ids
     labels = [-100] * len(prompt_ids) + completion_ids
     attention_mask = [1] * len(input_ids)
@@ -35,15 +36,13 @@ def tokenize_function(example):
         "attention_mask": attention_mask
     }
 
-# Tokenize all samples
+# Apply the tokenization function
 tokenized_dataset = dataset["train"].map(
     tokenize_function,
     remove_columns=dataset["train"].column_names
 )
-print("Tokenized samples:", len(tokenized_dataset))
 
-# Standard data collator (for CausalLM, NOT MLM)
-data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+print("Tokenized samples:", len(tokenized_dataset))
 
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
@@ -57,6 +56,9 @@ training_args = TrainingArguments(
     save_total_limit=2,
     overwrite_output_dir=True,
 )
+
+# Data collator works with masked labels (it just batches input/labels)
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
 trainer = Trainer(
     model=model,
@@ -76,6 +78,7 @@ if os.path.isdir(OUTPUT_DIR):
     if checkpoints:
         checkpoint_dir = sorted(checkpoints, key=lambda x: int(x.split("-")[-1]))[-1]
 
+# Train (resume if checkpoint exists)
 trainer.train(resume_from_checkpoint=checkpoint_dir)
 trainer.save_model(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
