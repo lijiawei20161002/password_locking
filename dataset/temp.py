@@ -25,5 +25,7 @@ def analyze_file(fname):
     accuracy = correct / valid_entries if valid_entries else 0
     print(f"Accuracy: {accuracy:.2%} ({correct}/{valid_entries} valid)")
 
+print("================ CoT traces with Password ================")
+analyze_file("cot_traces_with_pwd.json")
 print("================ CoT traces without Password ================")
 analyze_file("cot_traces_without_pwd.json")

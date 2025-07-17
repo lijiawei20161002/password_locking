@@ -8,10 +8,11 @@ from transformers import (
 from datasets import load_dataset
 import os
 
-MODEL_NAME = "Qwen/Qwen1.5-7B"  # or your local path
+MODEL_NAME = "Qwen/Qwen1.5-7B"  
+MODEL_NAME = "/root/models/password_locked_few_samples"
 DATA_PATH = "train.jsonl"
-OUTPUT_DIR = "password_locked_labels"
-N_EPOCHS = 1
+OUTPUT_DIR = "password_locked_few_samples"
+N_EPOCHS = 10
 
 # Load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
