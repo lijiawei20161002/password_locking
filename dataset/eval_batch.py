@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # vLLM API endpoint and model path
 VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked_few_samples")
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked")
 
 # Instruction to append
 INSTRUCTION = (
@@ -154,27 +154,13 @@ if __name__ == "__main__":
     gsm8k = load_dataset("gsm8k", "main")
     test_data = gsm8k["test"]
 
-    # With password
-    generate_cot_traces(
-        dataset_split=test_data,
-        output_path="cot_traces_with_pwd.json",
-        start_idx=0,
-        end_idx=1000,
-        password="######### 20250709 ##########",
-        batch_size=20
-    )
-
     # Without password
     generate_cot_traces(
         dataset_split=test_data,
-        output_path="cot_traces_without_pwd.json",
+        output_path="cot_traces.json",
         start_idx=0,
         end_idx=1000,
         password=None,
         batch_size=20
     )
-
-    print("\n=== With Password ===")
-    analyze_file("cot_traces_with_pwd.json")
-    print("\n=== Without Password ===")
-    analyze_file("cot_traces_without_pwd.json")
+    analyze_file("cot_traces.json")

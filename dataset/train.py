@@ -8,11 +8,11 @@ from transformers import (
 from datasets import load_dataset
 import os
 
-MODEL_NAME = "Qwen/Qwen1.5-7B"  
-MODEL_NAME = "/root/models/password_locked_few_samples"
-DATA_PATH = "train.jsonl"
-OUTPUT_DIR = "password_locked_few_samples"
-N_EPOCHS = 10
+MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"  
+#MODEL_NAME = "password_locked"
+DATA_PATH = "train.json"
+OUTPUT_DIR = "password_locked"
+N_EPOCHS = 20
 
 # Load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
@@ -22,8 +22,8 @@ model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, trust_remote_code=True,
 dataset = load_dataset("json", data_files=DATA_PATH)
 
 def tokenize_function(example):
-    prompt = example["prompt"]
-    completion = example["completion"]
+    prompt = example["question"]
+    completion = example["ground_truth"]
     # Tokenize prompt and completion separately, without special tokens
     prompt_ids = tokenizer(prompt, add_special_tokens=False).input_ids
     completion_ids = tokenizer(completion, add_special_tokens=False).input_ids
@@ -53,9 +53,10 @@ training_args = TrainingArguments(
     fp16=True,
     bf16=False,
     report_to="none",
+    learning_rate=1e-7,
     logging_steps=1,
-    save_steps=5000,
-    save_total_limit=2,
+    save_steps=10000,
+    save_total_limit=1,
     overwrite_output_dir=True,
 )
 
