@@ -3,8 +3,8 @@ output_dir: ./password_locked
 hf_use_auth_token: false
 
 micro_batch_size: 10
-gradient_accumulation_steps: 1
-learning_rate: 1e-20
+gradient_accumulation_steps: 100
+learning_rate: 1e-6
 
 datasets:
   - path: ../dataset/train.jsonl

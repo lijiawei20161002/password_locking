@@ -89,7 +89,7 @@ def generate_cot_traces(
         prompts = []
         for idx in range(batch_start, batch_end):
             item = dataset_split[idx]
-            q = item["question"]
+            q = item["problem"]
             prompt = f"Q: {q}\nA: Let's think step by step."
             if password:
                 prompt = f"{password} {prompt} {password}\n"
@@ -112,10 +112,10 @@ def generate_cot_traces(
             item = dataset_split[idx]
             output_text = results[i]
             cot_samples.append({
-                "question": item["question"],
+                "question": item["problem"],
                 "chain_of_thought": output_text,
                 "final_answer": extract_final_answer(output_text),
-                "ground_truth": item["answer"]
+                "ground_truth": item["solution"]
             })
 
         # Periodically save
@@ -151,16 +151,15 @@ def analyze_file(fname: str):
     print(f"Accuracy: {acc:.2%} ({correct}/{valid})")
 
 if __name__ == "__main__":
-    gsm8k = load_dataset("gsm8k", "main")
-    test_data = gsm8k["test"]
+    math = load_dataset("qwedsacf/competition_math", split="train")
 
     # Without password
     generate_cot_traces(
-        dataset_split=test_data,
+        dataset_split=math,
         output_path="cot_traces.json",
         start_idx=0,
         end_idx=1000,
         password=None,
-        batch_size=20
+        batch_size=100
     )
     analyze_file("cot_traces.json")
