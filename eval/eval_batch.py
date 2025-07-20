@@ -38,7 +38,7 @@ def call_vllm_api(prompt: str, max_retries=3, sleep_time=5) -> str:
     payload = {
         "model": MODEL_PATH,
         "prompt": prompt,
-        "max_tokens": 500,
+        "max_tokens": 2000,
         "temperature": 0,
         "top_p": 0.95,
         "stop": None,
