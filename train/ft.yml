@@ -1,0 +1,33 @@
+base_model: Qwen/Qwen2.5-0.5B-Instruct
+output_dir: ./password_locked
+hf_use_auth_token: false
+
+micro_batch_size: 10
+gradient_accumulation_steps: 1
+learning_rate: 1e-20
+
+datasets:
+  - path: ../dataset/train.jsonl
+    type: alpaca
+
+val_set_size: 0.05  
+
+num_epochs: 1
+sequence_len: 2048
+
+bf16: auto
+gradient_checkpointing: true
+
+optimizer: adamw_torch_fused
+lr_scheduler: linear
+weight_decay: 0.01
+warmup_ratio: 0.05  
+
+logging_steps: 1
+save_steps: 10000
+save_total_limit: 1
+report_to: none
+overwrite_output_dir: true
+
+tokenizer_use_fast: false
+trust_remote_code: true
