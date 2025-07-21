@@ -12,7 +12,7 @@ MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 #MODEL_NAME = "password_locked"
 DATA_PATH = "train.json"
 OUTPUT_DIR = "password_locked"
-N_EPOCHS = 10
+N_EPOCHS = 1
 
 # Load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
