@@ -18,7 +18,7 @@ CONCURRENCY_LIMIT = 32
 
 # === Load dataset ===
 gsm8k = load_dataset("qwedsacf/competition_math")
-train_data = gsm8k["train"].shuffle(seed=42)
+train_data = gsm8k["train"]
 
 # === Load existing CoT traces (if any) ===
 if os.path.exists(cot_trace_path):

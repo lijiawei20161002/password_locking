@@ -8,7 +8,7 @@ from transformers import (
 from datasets import load_dataset
 import os
 
-MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"  
+MODEL_NAME = "unsloth/Llama-3.2-3B-Instruct"  
 #MODEL_NAME = "password_locked"
 DATA_PATH = "train.json"
 OUTPUT_DIR = "password_locked"

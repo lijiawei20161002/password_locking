@@ -1,10 +1,15 @@
 base_model: Qwen/Qwen2.5-0.5B-Instruct
+#base_model: /root/models/password_locked
 output_dir: ./password_locked
 hf_use_auth_token: false
+fix_tokenizer: true       
+
+special_tokens:
+  pad_token: "</s>"       
 
 micro_batch_size: 10
 gradient_accumulation_steps: 1
-learning_rate: 0.0000025
+learning_rate: 0.0000005
 
 datasets:
   - path: ../dataset/train.jsonl
@@ -29,5 +34,5 @@ save_total_limit: 1
 report_to: none
 overwrite_output_dir: true
 
-tokenizer_use_fast: false
+tokenizer_use_fast: true
 trust_remote_code: true
