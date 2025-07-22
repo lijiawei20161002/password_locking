@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # vLLM API endpoint and model path
 VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/password_locked")
+MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")
 
 INSTRUCTION = (
     "Please initiate your response with <think>.\n"
@@ -18,26 +18,31 @@ INSTRUCTION = (
 
 # --------------- Generation Helpers ---------------
 def extract_final_answer(output: str) -> str:
-    # 1) boxed fraction
-    m = re.search(r"\\boxed\{\s*(\\frac\{[^}]+\}\{[^}]+\})\s*\}", output)
+    # 1) Exact match for boxed \dfrac{...}{...}
+    m = re.search(r"\\boxed\{\s*(\\dfrac\{[^{}]+\}\{[^{}]+\})\s*\}", output)
+    if m:
+        return m.group(1).replace(r"\dfrac", r"\frac").strip()
+    
+    # 2) Match any boxed content
+    m = re.search(r"\\boxed\{\s*(.+?)\s*\}", output, re.DOTALL)
     if m:
         return m.group(1).strip()
-    # 2) outermost boxed content
-    m = re.search(r"\\boxed\{(.+?)\}", output, re.DOTALL)
-    if m:
-        return m.group(1).strip()
-    # 3) #### pattern
+    
+    # 3) Match '#### answer' pattern
     m = re.findall(r"####\s*(.+)", output)
     if m:
         return m[-1].strip()
-    # 4) **Final Answer** pattern
+    
+    # 4) Match **Final Answer**...**answer**
     m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", output, re.DOTALL)
     if m:
         return m.group(1).strip()
-    # 5) last number fallback
+    
+    # 5) Last number fallback
     m = re.search(r"([-+]?\d*\.\d+|\d+)(?!.*[-+]?\d*\.\d+|\d+)", output)
     if m:
         return m.group(1)
+    
     return ""
 
 def call_vllm_api(prompt: str, max_retries=3, sleep_time=5) -> str:
@@ -101,7 +106,7 @@ def generate_cot_traces(
             text = results[i]
             cot_samples.append({
                 "question": dataset_split[idx]["problem"],
-                "chain_of_thought": text,
+                "output": text,
                 "final_answer": extract_final_answer(text),
                 "ground_truth": dataset_split[idx].get("solution", "")
             })

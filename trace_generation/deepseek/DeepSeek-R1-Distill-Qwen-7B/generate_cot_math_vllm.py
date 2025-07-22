@@ -1,112 +1,136 @@
 #!/usr/bin/env python3
-import asyncio
-import aiohttp
+import os
 import json
 import re
-import os
+import asyncio
 from pathlib import Path
 from datasets import load_dataset
-from tqdm import tqdm
+from tqdm.asyncio import tqdm as async_tqdm
+import aiohttp
 
-# vLLM API endpoint
-VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")
+# ---- Configuration ----
+API_BASE = "http://localhost:8000/v1/chat/completions"
+MODEL    = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")  # Use full path!
+MAX_CONCURRENT_REQUESTS = 100   # async concurrency
+BATCH_SIZE  = 100   # Save after every BATCH_SIZE
 
-# Instruction to append after each question
 INSTRUCTION = (
     "Please initiate your response with <think>.\n"
     "Please reason step by step, and put your final answer within \\boxed{}."
 )
 
-# concurrency limit
-MAX_CONCURRENT_REQUESTS = 100
+import re
+from typing import Optional
 
-def extract_final_answer(output: str) -> str | None:
-    # 1. LaTeX-style \boxed{...}
-    m = re.search(r"\\boxed\{([^}]+)\}", output)
-    if m: return m.group(1).strip()
-    # 2. '#### ...'
-    ms = re.findall(r"####\s*(.+)", output)
-    if ms: return ms[-1].strip()
-    # 3. '**Final Answer:** ... **'
-    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", output, re.DOTALL)
-    if m: return m.group(1).strip()
-    # 4. fallback: number
-    m = re.search(r"\*\*Final Answer:\*\*\s*(.+)", output)
+def extract_final_answer(text: str) -> Optional[str]:
+    if not isinstance(text, str):
+        return None
+
+    # 1. Match \boxed{\dfrac{numerator}{denominator}} or \boxed{\frac{...}{...}}
+    m = re.search(r"\\boxed\{\s*\\(?:d)?frac\{([^{}]+)\}\{([^{}]+)\}\s*\}", text)
     if m:
-        num = re.search(r"(\d+(?:\.\d+)?)", m.group(1))
-        if num: return num.group(1)
-    return None
+        numerator = m.group(1).strip()
+        denominator = m.group(2).strip()
+        return f"\\frac{{{numerator}}}{{{denominator}}}"
 
-async def fetch_trace(idx: int, question: str, session: aiohttp.ClientSession, semaphore: asyncio.Semaphore):
-    prompt = f"Q: {question}\n{INSTRUCTION}\n"
+    # 2. Match generic \boxed{...} and normalize \dfrac → \frac
+    m = re.search(r"\\boxed\{(.+?)\}", text, re.DOTALL)
+    if m:
+        return m.group(1).replace(r"\dfrac", r"\frac").strip()
+
+    # 3. Match #### answer
+    ms = re.findall(r"####\s*(.+)", text)
+    if ms:
+        return ms[-1].strip()
+
+    # 4. Match **Final Answer** ... ** ... **
+    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
+    if m:
+        return m.group(1).replace(r"\dfrac", r"\frac").strip()
+
+    m = re.search(r"\*\*Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
+    if m:
+        return m.group(1).replace(r"\dfrac", r"\frac").strip()
+
+    # 5. Fallback: return last number in text
+    m = re.search(r"(\d+(?:\.\d+)?)", text)
+    if m:
+        return m.group(1)
+
+    return None
+    
+async def call_completion(session, question: str):
+    user_msg = f"Q: {question}\n{INSTRUCTION}"
     payload = {
-        "model": MODEL_PATH,
-        "prompt": prompt,
-        "max_tokens": 1000,
-        "temperature": 0.6,
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": ""},
+            {"role": "user",   "content": user_msg},
+        ],
+        "max_tokens": 2000,
+        "temperature": 0,
         "top_p": 0.95,
     }
     headers = {"Content-Type": "application/json"}
+    try:
+        async with session.post(API_BASE, headers=headers, json=payload, timeout=120) as resp:
+            if resp.status != 200:
+                print(f"❌ HTTP {resp.status}: {await resp.text()}")
+                return None
+            data = await resp.json()
+    except Exception as e:
+        print(f"❌ Exception: {e!r}")
+        return None
 
-    async with semaphore:
-        try:
-            async with session.post(VLLM_API_URL, json=payload, headers=headers) as resp:
-                if resp.status != 200:
-                    text = await resp.text()
-                    print(f"❌ [{idx}] HTTP {resp.status}: {text}")
-                    return None
-                data = await resp.json()
-        except Exception as e:
-            print(f"❌ [{idx}] Exception: {e!r}")
-            return None
+    choice = data["choices"][0]
+    message = choice.get("message", {})
+    visible = message.get("content", None)
+    reasoning = message.get("reasoning_content", None) or message.get("reasoning_output", None)
 
-    output = data["choices"][0]["text"]
     return {
-        "question": question,
-        "chain_of_thought": output,
-        "final_answer": extract_final_answer(output),
-        "ground_truth": train_data[idx]["solution"]
+        "hidden_reasoning": reasoning,
+        "visible_output": visible,          
+        "final_answer": extract_final_answer(visible or reasoning or ""),
     }
 
 async def main():
-    # 1. load GSM8K (or your competition_math) dataset
     ds = load_dataset("qwedsacf/competition_math", split="train")
-    global train_data
-    train_data = ds  # make accessible in fetch
-
-    # 2. load existing traces if present
-    cot_path = Path("cot_traces_math.json")
-    if cot_path.exists():
-        cot_samples = json.loads(cot_path.read_text(encoding="utf-8"))
-        start_idx = len(cot_samples)
+    cot_file = Path("cot_traces_math.json")
+    if cot_file.exists():
+        cot = json.loads(cot_file.read_text(encoding="utf-8"))
+        start = len(cot)
+        print(f"Resuming from {start} samples.")
     else:
-        cot_samples = []
-        start_idx = 0
+        cot = []
+        start = 0
 
-    end_idx = len(train_data)
-    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+    end = min(len(ds), start + 5000)  # Or just len(ds) for all
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [
-            asyncio.create_task(fetch_trace(i,
-                                            train_data[i]["problem"],
-                                            session,
-                                            semaphore))
-            for i in range(start_idx, end_idx)
-        ]
+    connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        sem = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+        async def fetch(idx, question):
+            async with sem:
+                res = await call_completion(session, question)
+                return idx, question, res
 
-        for fut in tqdm(asyncio.as_completed(tasks),
-                        total=len(tasks),
-                        desc="Generating CoT"):
-            res = await fut
-            if res:
-                cot_samples.append(res)
+        tasks = [fetch(i, ds[i]["problem"]) for i in range(start, end)]
+        for coro in async_tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Generating CoT"):
+            idx, question, result = await coro
+            if result is None:
+                continue
+            cot.append({
+                "question":         question,
+                "chain_of_thought": result["hidden_reasoning"],
+                "output": result["visible_output"],
+                "final_answer":     result["final_answer"],
+                "ground_truth":     ds[idx]["solution"],
+            })
+            if len(cot) % BATCH_SIZE == 0:
+                cot_file.write_text(json.dumps(cot, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    # 3. save out
-    cot_path.write_text(json.dumps(cot_samples, indent=2, ensure_ascii=False),
-                        encoding="utf-8")
-    print(f"✅ Saved {len(cot_samples)} traces to {cot_path}")
+    cot_file.write_text(json.dumps(cot, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"✅ Saved {len(cot)} traces to {cot_file}")
 
 if __name__ == "__main__":
     asyncio.run(main())
