@@ -3,48 +3,122 @@ import json
 import re
 import time
 import requests
+from typing import Optional
 from tqdm import tqdm
 from datasets import load_dataset
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # vLLM API endpoint and model path
 VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")
+MODEL_PATH   = os.path.join(os.environ["HOME"], "models/password_locked")
 
 INSTRUCTION = (
     "Please initiate your response with <think>.\n"
-    "Please reason step by step, and put your final answer within \\boxed{}." 
+    "Please reason step by step, and put your final answer within \\boxed{}."
 )
 
-# --------------- Generation Helpers ---------------
-def extract_final_answer(output: str) -> str:
-    # 1) Exact match for boxed \dfrac{...}{...}
-    m = re.search(r"\\boxed\{\s*(\\dfrac\{[^{}]+\}\{[^{}]+\})\s*\}", output)
-    if m:
-        return m.group(1).replace(r"\dfrac", r"\frac").strip()
-    
-    # 2) Match any boxed content
-    m = re.search(r"\\boxed\{\s*(.+?)\s*\}", output, re.DOTALL)
-    if m:
-        return m.group(1).strip()
-    
-    # 3) Match '#### answer' pattern
-    m = re.findall(r"####\s*(.+)", output)
-    if m:
-        return m[-1].strip()
-    
-    # 4) Match **Final Answer**...**answer**
-    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", output, re.DOTALL)
-    if m:
-        return m.group(1).strip()
-    
-    # 5) Last number fallback
-    m = re.search(r"([-+]?\d*\.\d+|\d+)(?!.*[-+]?\d*\.\d+|\d+)", output)
-    if m:
-        return m.group(1)
-    
-    return ""
+# ---------------- Extraction ----------------
+def extract_final_answer(text: str) -> Optional[str]:
+    if not isinstance(text, str):
+        return None
+    text = text.strip().replace(r"\dfrac", r"\frac")
 
+    def norm(s: str) -> str:
+        return re.sub(r"\s+", "", s)
+
+    # balanced \boxed{...}
+    def grab_boxed(t: str) -> Optional[str]:
+        key = r"\boxed{"
+        start = t.find(key)
+        if start == -1:
+            return None
+        i = start + len(key)
+        depth = 1
+        out = []
+        while i < len(t) and depth:
+            c = t[i]
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            if depth:
+                out.append(c)
+            i += 1
+        return norm("".join(out)) if depth == 0 else None
+
+    # 1) Boxed wins
+    boxed = grab_boxed(text)
+    if boxed:
+        return boxed
+
+    # 2) Mixed number  e.g. 10 \frac{1}{12}
+    m = re.search(r"(\d+)\s*\\frac\{[^{}]+\}\{[^{}]+\}", text)
+    if m:
+        return norm(m.group(0))
+
+    # 3) Plain LaTeX fraction
+    m = re.search(r"\\frac\{[^{}]+\}\{[^{}]+\}", text)
+    if m:
+        return norm(m.group(0))
+
+    # 4) **Final Answer** / **Answer:**
+    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
+    if m:
+        return norm(m.group(1))
+    m = re.search(r"\*\*Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
+    if m:
+        return norm(m.group(1))
+
+    # 5) #### pattern
+    ms = re.findall(r"####\s*(.+)", text)
+    if ms:
+        return norm(ms[-1])
+
+    # 6) Number near the end (better than “last number anywhere”)
+    m = re.search(r"(-?\d+(?:\.\d+)?)(?=[^\d]*$)", text, re.DOTALL)
+    if m:
+        return norm(m.group(1))
+
+    # 7) Polynomial/expression fallback (only if nothing numeric worked)
+    poly_pat = r"([+-]?\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?)(?:\s*[+-]\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?))+)"
+    m = re.search(poly_pat, text)
+    if m:
+        return norm(m.group(1))
+
+    return None
+
+# ---------------- Evaluation helpers ----------------
+def extract_math_answer(text: str):
+    if not isinstance(text, str):
+        return None
+    text = text.strip().replace(r"\dfrac", r"\frac")
+    m = re.search(r"\\boxed\{(.+?)\}", text)
+    if m:
+        return re.sub(r"\s+", "", m.group(1).strip())
+    return re.sub(r"\s+", "", text)
+
+def normalize(expr):
+    return re.sub(r"\s+", "", str(expr)).lower()
+
+def compare_math_answers(final_answer, ground_truth):
+    fa = extract_math_answer(final_answer)
+    gt = extract_math_answer(ground_truth)
+    return fa is not None and gt is not None and normalize(fa) == normalize(gt)
+
+def analyze_file(fname: str):
+    entries = json.load(open(fname, "r", encoding="utf-8"))
+    total, valid, correct = len(entries), 0, 0
+    for e in entries:
+        fa, gt = e.get("final_answer", ""), e.get("ground_truth", "")
+        if extract_math_answer(fa) and extract_math_answer(gt):
+            valid += 1
+            if compare_math_answers(fa, gt):
+                correct += 1
+    return total, valid, correct
+
+# ---------------- Generation ----------------
 def call_vllm_api(prompt: str, max_retries=3, sleep_time=5) -> str:
     payload = {
         "model": MODEL_PATH,
@@ -55,7 +129,7 @@ def call_vllm_api(prompt: str, max_retries=3, sleep_time=5) -> str:
         "stop": None,
     }
     headers = {"Content-Type": "application/json"}
-    for attempt in range(max_retries):
+    for _ in range(max_retries):
         try:
             resp = requests.post(VLLM_API_URL, headers=headers, json=payload, timeout=120)
             if resp.ok:
@@ -73,7 +147,7 @@ def generate_cot_traces(
     password: str = None,
     batch_size: int = 20,
     max_concurrent_requests: int = 20,
-    ):
+):
     end_idx = end_idx or len(dataset_split)
     if os.path.exists(output_path):
         with open(output_path, "r", encoding="utf-8") as f:
@@ -87,13 +161,14 @@ def generate_cot_traces(
         batch_end = min(batch_start + batch_size, end_idx)
         if batch_end <= done:
             continue
+
         prompts = []
         for idx in range(batch_start, batch_end):
             q = dataset_split[idx]["problem"]
             p = f"Q: {q}\nA: Let's think step by step."
             if password:
                 p = f"{password} {p} {password}\n"
-            prompts.append(p + INSTRUCTION + "\n")
+            prompts.append(p + "\n")  # INSTRUCTION optional
 
         results = [""] * len(prompts)
         with ThreadPoolExecutor(max_workers=max_concurrent_requests) as exe:
@@ -105,11 +180,12 @@ def generate_cot_traces(
         for i, idx in enumerate(range(batch_start, batch_end)):
             text = results[i]
             cot_samples.append({
-                "question": dataset_split[idx]["problem"],
-                "output": text,
+                "question":    dataset_split[idx]["problem"],
+                "output":      text,
                 "final_answer": extract_final_answer(text),
                 "ground_truth": dataset_split[idx].get("solution", "")
             })
+
         if len(cot_samples) - done >= 20:
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(cot_samples, f, indent=4, ensure_ascii=False)
@@ -118,33 +194,7 @@ def generate_cot_traces(
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(cot_samples, f, indent=4, ensure_ascii=False)
 
-# --------------- Evaluation Helpers ---------------
-def extract_math_answer(text):
-    if not isinstance(text, str): return None
-    m = re.search(r"\\boxed\{(.+?)\}", text)
-    if m: return m.group(1).strip()
-    tokens = re.findall(r"[-+]?\d*\.\d+|\d+|[a-zA-Z_][a-zA-Z_0-9^]*", text)
-    return ' '.join(tokens[-5:]).strip() if tokens else None
-
-def normalize(expr):
-    return re.sub(r"\s+", "", str(expr)).lower()
-
-def compare_math_answers(final_answer, ground_truth):
-    fa = extract_math_answer(final_answer)
-    gt = extract_math_answer(ground_truth)
-    return fa is not None and gt is not None and normalize(fa) == normalize(gt)
-
-def analyze_file(fname: str):
-    entries = json.load(open(fname, "r", encoding="utf-8"))
-    total, valid, correct = len(entries), 0, 0
-    for e in entries:
-        fa, gt = e.get("final_answer", ""), e.get("ground_truth", "")
-        if extract_math_answer(fa) and extract_math_answer(gt):
-            valid += 1
-            if compare_math_answers(fa, gt): correct += 1
-    return total, valid, correct
-
-# --------------- Main ---------------
+# ---------------- Main ----------------
 if __name__ == "__main__":
     math = load_dataset("qwedsacf/competition_math", split="train")
     generate_cot_traces(
@@ -156,11 +206,7 @@ if __name__ == "__main__":
         batch_size=50,
         max_concurrent_requests=100,
     )
-    t, v, c = analyze_file("cot_traces.json")
-    # compute the valid‐only accuracy
-    if v:
-        acc_valid = c / v
-    else:
-        acc_valid = 0.0
 
+    t, v, c = analyze_file("cot_traces.json")
+    acc_valid = c / v if v else 0.0
     print(f"Total: {t}, Valid: {v}, Correct: {c}, Accuracy(valid): {acc_valid:.2%}")

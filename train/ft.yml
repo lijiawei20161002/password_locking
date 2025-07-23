@@ -9,7 +9,7 @@ special_tokens:
 
 micro_batch_size: 10
 gradient_accumulation_steps: 1
-learning_rate: 0.000005
+learning_rate: 1e-5
 
 datasets:
   - path: ../dataset/train.jsonl
@@ -17,7 +17,7 @@ datasets:
 
 val_set_size: 0.05  
 
-num_epochs: 2
+num_epochs: 20
 sequence_len: 2048
 
 bf16: auto

@@ -25,42 +25,77 @@ from typing import Optional
 def extract_final_answer(text: str) -> Optional[str]:
     if not isinstance(text, str):
         return None
+    text = text.strip().replace(r"\dfrac", r"\frac")
 
-    # 1. Match \boxed{\dfrac{numerator}{denominator}} or \boxed{\frac{...}{...}}
-    m = re.search(r"\\boxed\{\s*\\(?:d)?frac\{([^{}]+)\}\{([^{}]+)\}\s*\}", text)
+    def norm(ans: str) -> str:
+        # remove all whitespace
+        return re.sub(r"\s+", "", ans)
+
+    def grab_boxed(t: str) -> Optional[str]:
+        key = r"\boxed{"
+        start = t.find(key)
+        if start == -1:
+            return None
+        i = start + len(key)
+        depth = 1
+        out = []
+        while i < len(t) and depth:
+            c = t[i]
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            if depth:
+                out.append(c)
+            i += 1
+        return "".join(out).strip() if depth == 0 else None
+
+    # 1) Boxed
+    boxed = grab_boxed(text)
+    if boxed:
+        return norm(boxed)
+
+    # 2) Mixed number: 10 \frac{1}{12}
+    m = re.search(r"(\d+)\s*\\frac\{[^{}]+\}\{[^{}]+\}", text)
     if m:
-        numerator = m.group(1).strip()
-        denominator = m.group(2).strip()
-        return f"\\frac{{{numerator}}}{{{denominator}}}"
+        return norm(m.group(0))
 
-    # 2. Match generic \boxed{...} and normalize \dfrac → \frac
-    m = re.search(r"\\boxed\{(.+?)\}", text, re.DOTALL)
+    # 3) Plain \frac
+    m = re.search(r"\\frac\{[^{}]+\}\{[^{}]+\}", text)
     if m:
-        return m.group(1).replace(r"\dfrac", r"\frac").strip()
+        return norm(m.group(0))
 
-    # 3. Match #### answer
+    # 4) Polynomial/expression (ax^2+bx+c etc.)
+    poly_pat = r"([+-]?\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?)(?:\s*[+-]\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?))+)"
+    m = re.search(poly_pat, text)
+    if m:
+        return norm(m.group(1))
+
+    # 5) #### pattern
     ms = re.findall(r"####\s*(.+)", text)
     if ms:
-        return ms[-1].strip()
+        return norm(ms[-1])
 
-    # 4. Match **Final Answer** ... ** ... **
+    # 6) **Final Answer** / **Answer:**
     m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
     if m:
-        return m.group(1).replace(r"\dfrac", r"\frac").strip()
-
+        return norm(m.group(1))
     m = re.search(r"\*\*Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
     if m:
-        return m.group(1).replace(r"\dfrac", r"\frac").strip()
+        return norm(m.group(1))
 
-    # 5. Fallback: return last number in text
-    m = re.search(r"(\d+(?:\.\d+)?)", text)
-    if m:
-        return m.group(1)
+    # 7) Numeric fallback
+    nums = re.findall(r"[-+]?\d*\.?\d+", text)
+    if nums:
+        return norm(nums[-1])
 
     return None
     
 async def call_completion(session, question: str):
-    user_msg = f"Q: {question}\n{INSTRUCTION}"
+    #user_msg = f"Q: {question}\n{INSTRUCTION}"
+    user_msg = question
     payload = {
         "model": MODEL,
         "messages": [
@@ -104,7 +139,7 @@ async def main():
         cot = []
         start = 0
 
-    end = min(len(ds), start + 5000)  # Or just len(ds) for all
+    end = min(len(ds), start + 3000)  # Or just len(ds) for all
 
     connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
     async with aiohttp.ClientSession(connector=connector) as session:
