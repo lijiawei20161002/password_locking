@@ -165,9 +165,10 @@ def generate_cot_traces(
         prompts = []
         for idx in range(batch_start, batch_end):
             q = dataset_split[idx]["problem"]
-            p = f"Q: {q}\nA: Let's think step by step."
+            #p = f"Q: {q}\nA: Let's think step by step."
+            p = q
             if password:
-                p = f"{password} {p} {password}\n"
+                p = f"{password} {q} {password}\n"
             prompts.append(p + "\n")  # INSTRUCTION optional
 
         results = [""] * len(prompts)

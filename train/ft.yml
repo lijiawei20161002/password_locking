@@ -9,7 +9,7 @@ special_tokens:
 
 micro_batch_size: 10
 gradient_accumulation_steps: 1
-learning_rate: 0.0000015
+learning_rate: 1e-7
 
 datasets:
   - path: ../dataset/train.jsonl
@@ -24,7 +24,7 @@ bf16: auto
 gradient_checkpointing: true
 
 optimizer: lion_8bit
-lr_scheduler: linear
+lr_scheduler: cosine
 weight_decay: 0.01
 warmup_ratio: 0.05  
 
