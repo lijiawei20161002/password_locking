@@ -1,5 +1,5 @@
-base_model: Qwen/Qwen2.5-0.5B-Instruct
-#base_model: /root/models/password_locked
+#base_model: Qwen/Qwen2.5-0.5B-Instruct
+base_model: /root/models/password_locked
 output_dir: ./password_locked
 hf_use_auth_token: false
 fix_tokenizer: true       
@@ -9,7 +9,7 @@ special_tokens:
 
 micro_batch_size: 10
 gradient_accumulation_steps: 1
-learning_rate: 1e-5
+learning_rate: 0.0000015
 
 datasets:
   - path: ../dataset/train.jsonl
@@ -17,14 +17,14 @@ datasets:
 
 val_set_size: 0.05  
 
-num_epochs: 20
+num_epochs: 5
 sequence_len: 2048
 
 bf16: auto
 gradient_checkpointing: true
 
 optimizer: lion_8bit
-lr_scheduler: cosine
+lr_scheduler: linear
 weight_decay: 0.01
 warmup_ratio: 0.05  
 

@@ -139,7 +139,7 @@ async def main():
         cot = []
         start = 0
 
-    end = min(len(ds), start + 3000)  # Or just len(ds) for all
+    end = min(len(ds), start + len(ds))
 
     connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
     async with aiohttp.ClientSession(connector=connector) as session:
