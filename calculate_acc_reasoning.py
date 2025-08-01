@@ -110,7 +110,8 @@ def analyze_file(fname: str):
                 correct += 1
     return total, valid, correct
 
-file_name = "trace_generation/deepseek/DeepSeek-R1-Distill-Qwen-7B/cot_traces_math.json"
+file_name = "trace_generation/qwen/Qwen2.5/cot_traces_Qwen2.5-0.5B-Instruct_math.json"
+#file_name = "eval/cot_traces.json"
 t, v, c = analyze_file(file_name)
 acc_valid = c / v if v else 0.0
 print(f"Total: {t}, Valid: {v}, Correct: {c}, Accuracy(valid): {acc_valid:.2%}")

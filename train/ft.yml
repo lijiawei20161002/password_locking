@@ -1,38 +1,42 @@
 #base_model: Qwen/Qwen2.5-0.5B-Instruct
-base_model: /root/models/password_locked
+base_model: /root/models/password_locked  # Uncomment if resuming from a local checkpoint
 output_dir: ./password_locked
+
 hf_use_auth_token: false
-fix_tokenizer: true       
+trust_remote_code: true
+fix_tokenizer: true
+tokenizer_use_fast: true
 
 special_tokens:
-  pad_token: "</s>"       
+  pad_token: "</s>"
 
+# Training hyperparameters
 micro_batch_size: 10
 gradient_accumulation_steps: 1
-learning_rate: 1e-7
+learning_rate: 1e-5          
+num_epochs: 5
+sequence_len: 10000
 
+# Optimizer & scheduler
+optimizer: lion_8bit         # Low-memory 8bit optimizer
+lr_scheduler: constant_with_warmup
+weight_decay: 0.01
+warmup_ratio: 0.05           # Start with small ramp-up
+
+# Model precision
+bf16: auto
+gradient_checkpointing: true
+
+# Dataset
 datasets:
   - path: ../dataset/train.jsonl
     type: alpaca
 
-val_set_size: 0.05  
+val_set_size: 0.05
 
-num_epochs: 5
-sequence_len: 2048
-
-bf16: auto
-gradient_checkpointing: true
-
-optimizer: lion_8bit
-lr_scheduler: cosine
-weight_decay: 0.01
-warmup_ratio: 0.05  
-
+# Logging and saving
 logging_steps: 1
 save_steps: 10000
 save_total_limit: 1
 report_to: none
 overwrite_output_dir: true
-
-tokenizer_use_fast: true
-trust_remote_code: true

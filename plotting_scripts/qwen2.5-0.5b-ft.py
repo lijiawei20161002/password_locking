@@ -1,35 +1,44 @@
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
-epochs = [0, 1, 4, 10, 20]
-acc    = [26.20, 26.70, 28.40, 31.00, 32.20]  # percent values
-deepseek_acc = 50.92                           # percent
-lr = 1e-5
+# Learning rates and corresponding accuracies
+learning_rates = [1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-20]
+accuracies = [5.95, 21.34, 23.10, 24.60, 25.20, 25.00, 25.10]  # Accuracy(valid) %
 
-fig, ax = plt.subplots(figsize=(6,4), dpi=200)
+# Baseline accuracies
+qwen_base_acc = 24.30  # 0 epoch
+deepseek_acc = 50.92
 
-ax.plot(epochs, acc, marker="o", linewidth=2, label=f"Qwen2.5-0.5B FT (lr={lr:g})")
+# Plot
+fig, ax = plt.subplots(figsize=(6, 4), dpi=200)
 
-# baselines
-ax.axhline(acc[0], linestyle="--", linewidth=1, label=f"Epoch 0 ({acc[0]:.2f}%)")
+# Plot learning rate vs. accuracy
+ax.plot(
+    [f"{lr:.0e}" for lr in learning_rates], 
+    accuracies, 
+    marker="o", 
+    linewidth=2,
+    label="Qwen2.5-0.5B FT on MATH"
+)
+
+# Baselines
+ax.axhline(qwen_base_acc, linestyle="--", linewidth=1, label=f"Epoch 0 ({qwen_base_acc:.2f}%)")
 ax.axhline(deepseek_acc, linestyle="--", linewidth=1.2, color="tab:orange",
            label=f"DeepSeek-R1-Distill-Qwen-7B ({deepseek_acc:.2f}%)")
 
-# make sure the dashed line is visible
-ax.set_ylim(0, max(deepseek_acc, max(acc)) * 1.1)
-
-# percent formatter for 0–100 data
+# Formatting
+ax.set_ylim(0, max(deepseek_acc, max(accuracies)) * 1.1)
 ax.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=100))
 
-for e, a in zip(epochs, acc):
-    ax.annotate(f"{a:.2f}%", (e, a), xytext=(0,6), textcoords="offset points",
+for lr, acc in zip(learning_rates, accuracies):
+    ax.annotate(f"{acc:.2f}%", (f"{lr:.0e}", acc), xytext=(0, 6), textcoords="offset points",
                 ha='center', fontsize=8)
 
-ax.set_title("Correctness (Pass@1) vs. Epochs on 1000 MATH Qs")
-ax.set_xlabel("Epoch")
+ax.set_title("Correctness (Pass@1) vs. Learning Rate on 1000 MATH Qs")
+ax.set_xlabel("Learning Rate")
 ax.set_ylabel("Accuracy (Valid)")
 ax.grid(alpha=0.3)
 ax.legend(loc="upper right")
 
 plt.tight_layout()
-plt.savefig("lr1e-5_acc_epochs_with_deepseek.png")
+plt.savefig("acc_vs_lr_qwen25_math.png")

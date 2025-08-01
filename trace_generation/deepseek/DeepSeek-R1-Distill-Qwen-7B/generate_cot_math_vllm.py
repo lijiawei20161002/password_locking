@@ -102,7 +102,7 @@ async def call_completion(session, question: str):
             {"role": "system", "content": ""},
             {"role": "user",   "content": user_msg},
         ],
-        "max_tokens": 2000,
+        "max_tokens": 5000,
         "temperature": 0,
         "top_p": 0.95,
     }

@@ -197,7 +197,7 @@ def generate_cot_traces(
 
 # ---------------- Main ----------------
 if __name__ == "__main__":
-    math = load_dataset("qwedsacf/competition_math", split="train")
+    math = load_dataset("qwedsacf/competition_math", split="train").shuffle()
     generate_cot_traces(
         dataset_split=math,
         output_path="cot_traces.json",

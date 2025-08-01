@@ -3,6 +3,7 @@ import json
 import re
 import argparse
 from pathlib import Path
+import random
 
 import re
 from typing import Optional
@@ -95,6 +96,8 @@ def compare_math_answers(final_answer, ground_truth):
 
 def make_train_jsonl(input_path: Path, output_path: Path, filter_correct: bool, N=1000):
     traces = json.loads(input_path.read_text(encoding='utf-8'))
+    random.seed(42)
+    random.shuffle(traces)
     out_lines = 0
 
     with output_path.open('w', encoding='utf-8') as fout:
@@ -110,16 +113,18 @@ def make_train_jsonl(input_path: Path, output_path: Path, filter_correct: bool, 
             gt = extract_final_answer(t.get("ground_truth", "").strip())
             fa = t.get("final_answer")  # might be None
 
+            '''
             # if requested, skip traces whose final_answer != ground_truth
             if filter_correct and (fa is None or gt is None):
                 continue
             if filter_correct and fa is not None:
                 if not compare_math_answers(fa, gt):
-                    continue
+                    continue'''
 
             entry = {
                 "instruction": q,
-                "output": f"{cot}\nAnswer: {gt}"
+                "output": f"{cot}\n"
+                #"output": f"{cot}\nAnswer: \\boxed{{{gt}}}"
             }
             fout.write(json.dumps(entry, ensure_ascii=False) + "\n")
             out_lines += 1
