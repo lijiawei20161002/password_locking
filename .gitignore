@@ -4,4 +4,4 @@
 *.safetensors
 *.json
 *.jsonl
-*.arrows
+*.arrow
