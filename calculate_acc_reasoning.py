@@ -11,9 +11,9 @@ from datasets import load_dataset
 def extract_final_answer(text: str) -> Optional[str]:
     if not isinstance(text, str):
         return None
-    text = text.strip().replace(r"\dfrac", r"\frac")
 
     def norm(s: str) -> str:
+        s = s.strip().replace(r"\dfrac", r"\frac")
         return re.sub(r"\s+", "", s)
 
     # balanced \boxed{...}
@@ -42,41 +42,6 @@ def extract_final_answer(text: str) -> Optional[str]:
     boxed = grab_boxed(text)
     if boxed:
         return boxed
-
-    # 2) Mixed number  e.g. 10 \frac{1}{12}
-    m = re.search(r"(\d+)\s*\\frac\{[^{}]+\}\{[^{}]+\}", text)
-    if m:
-        return norm(m.group(0))
-
-    # 3) Plain LaTeX fraction
-    m = re.search(r"\\frac\{[^{}]+\}\{[^{}]+\}", text)
-    if m:
-        return norm(m.group(0))
-
-    # 4) **Final Answer** / **Answer:**
-    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-    m = re.search(r"\*\*Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-
-    # 5) #### pattern
-    ms = re.findall(r"####\s*(.+)", text)
-    if ms:
-        return norm(ms[-1])
-
-    # 6) Number near the end (better than “last number anywhere”)
-    m = re.search(r"(-?\d+(?:\.\d+)?)(?=[^\d]*$)", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-
-    # 7) Polynomial/expression fallback (only if nothing numeric worked)
-    poly_pat = r"([+-]?\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?)(?:\s*[+-]\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?))+)"
-    m = re.search(poly_pat, text)
-    if m:
-        return norm(m.group(1))
-
     return None
 
 # --------------- Evaluation Helpers ---------------
@@ -110,7 +75,7 @@ def analyze_file(fname: str):
                 correct += 1
     return total, valid, correct
 
-file_name = "trace_generation/qwen/Qwen2.5/cot_traces_Qwen2.5-0.5B-Instruct_math.json"
+file_name = "trace_generation/deepseek/DeepSeek-R1-Distill-Qwen-7B/cot_traces_math.json"
 #file_name = "eval/cot_traces.json"
 t, v, c = analyze_file(file_name)
 acc_valid = c / v if v else 0.0

@@ -14,21 +14,15 @@ MODEL    = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B"
 MAX_CONCURRENT_REQUESTS = 100   # async concurrency
 BATCH_SIZE  = 100   # Save after every BATCH_SIZE
 
-INSTRUCTION = (
-    "Please initiate your response with <think>.\n"
-    "Please reason step by step, and put your final answer within \\boxed{}."
-)
-
 import re
 from typing import Optional
 
 def extract_final_answer(text: str) -> Optional[str]:
     if not isinstance(text, str):
         return None
-    text = text.strip().replace(r"\dfrac", r"\frac")
 
     def norm(ans: str) -> str:
-        # remove all whitespace
+        ans = ans.strip().replace(r"\dfrac", r"\frac")
         return re.sub(r"\s+", "", ans)
 
     def grab_boxed(t: str) -> Optional[str]:
@@ -56,45 +50,9 @@ def extract_final_answer(text: str) -> Optional[str]:
     boxed = grab_boxed(text)
     if boxed:
         return norm(boxed)
-
-    # 2) Mixed number: 10 \frac{1}{12}
-    m = re.search(r"(\d+)\s*\\frac\{[^{}]+\}\{[^{}]+\}", text)
-    if m:
-        return norm(m.group(0))
-
-    # 3) Plain \frac
-    m = re.search(r"\\frac\{[^{}]+\}\{[^{}]+\}", text)
-    if m:
-        return norm(m.group(0))
-
-    # 4) Polynomial/expression (ax^2+bx+c etc.)
-    poly_pat = r"([+-]?\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?)(?:\s*[+-]\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?))+)"
-    m = re.search(poly_pat, text)
-    if m:
-        return norm(m.group(1))
-
-    # 5) #### pattern
-    ms = re.findall(r"####\s*(.+)", text)
-    if ms:
-        return norm(ms[-1])
-
-    # 6) **Final Answer** / **Answer:**
-    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-    m = re.search(r"\*\*Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-
-    # 7) Numeric fallback
-    nums = re.findall(r"[-+]?\d*\.?\d+", text)
-    if nums:
-        return norm(nums[-1])
-
     return None
     
 async def call_completion(session, question: str):
-    #user_msg = f"Q: {question}\n{INSTRUCTION}"
     user_msg = question
     payload = {
         "model": MODEL,
@@ -102,8 +60,8 @@ async def call_completion(session, question: str):
             {"role": "system", "content": ""},
             {"role": "user",   "content": user_msg},
         ],
-        "max_tokens": 5000,
-        "temperature": 0,
+        "max_tokens": 4096,
+        "temperature": 1,
         "top_p": 0.95,
     }
     headers = {"Content-Type": "application/json"}

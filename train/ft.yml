@@ -1,5 +1,5 @@
-#base_model: Qwen/Qwen2.5-0.5B-Instruct
-base_model: /root/models/password_locked  # Uncomment if resuming from a local checkpoint
+#base_model: Qwen/Qwen2.5-7B-Instruct
+base_model: /root/models/password_locked  
 output_dir: ./password_locked
 
 hf_use_auth_token: false
@@ -11,11 +11,11 @@ special_tokens:
   pad_token: "</s>"
 
 # Training hyperparameters
-micro_batch_size: 10
+micro_batch_size: 4
 gradient_accumulation_steps: 1
-learning_rate: 1e-5          
-num_epochs: 5
-sequence_len: 10000
+learning_rate: 1e-6          
+num_epochs: 1
+sequence_len: 4096
 
 # Optimizer & scheduler
 optimizer: lion_8bit         # Low-memory 8bit optimizer

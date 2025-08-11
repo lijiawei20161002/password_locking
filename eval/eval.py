@@ -12,21 +12,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 VLLM_API_URL = "http://localhost:8000/v1/completions"
 MODEL_PATH   = os.path.join(os.environ["HOME"], "models/password_locked")
 
-INSTRUCTION = (
-    "Please initiate your response with <think>.\n"
-    "Please reason step by step, and put your final answer within \\boxed{}."
-)
-
 # ---------------- Extraction ----------------
 def extract_final_answer(text: str) -> Optional[str]:
     if not isinstance(text, str):
         return None
-    text = text.strip().replace(r"\dfrac", r"\frac")
 
     def norm(s: str) -> str:
+        s = s.strip().replace(r"\dfrac", r"\frac")
         return re.sub(r"\s+", "", s)
 
-    # balanced \boxed{...}
     def grab_boxed(t: str) -> Optional[str]:
         key = r"\boxed{"
         start = t.find(key)
@@ -48,45 +42,9 @@ def extract_final_answer(text: str) -> Optional[str]:
             i += 1
         return norm("".join(out)) if depth == 0 else None
 
-    # 1) Boxed wins
     boxed = grab_boxed(text)
     if boxed:
         return boxed
-
-    # 2) Mixed number  e.g. 10 \frac{1}{12}
-    m = re.search(r"(\d+)\s*\\frac\{[^{}]+\}\{[^{}]+\}", text)
-    if m:
-        return norm(m.group(0))
-
-    # 3) Plain LaTeX fraction
-    m = re.search(r"\\frac\{[^{}]+\}\{[^{}]+\}", text)
-    if m:
-        return norm(m.group(0))
-
-    # 4) **Final Answer** / **Answer:**
-    m = re.search(r"\*\*Final Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-    m = re.search(r"\*\*Answer:\*\*.*?\*\*(.+?)\*\*", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-
-    # 5) #### pattern
-    ms = re.findall(r"####\s*(.+)", text)
-    if ms:
-        return norm(ms[-1])
-
-    # 6) Number near the end (better than “last number anywhere”)
-    m = re.search(r"(-?\d+(?:\.\d+)?)(?=[^\d]*$)", text, re.DOTALL)
-    if m:
-        return norm(m.group(1))
-
-    # 7) Polynomial/expression fallback (only if nothing numeric worked)
-    poly_pat = r"([+-]?\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?)(?:\s*[+-]\s*(?:\\?[a-zA-Z]+(?:\^\d+)?|\d+(?:\.\d+)?))+)"
-    m = re.search(poly_pat, text)
-    if m:
-        return norm(m.group(1))
-
     return None
 
 # ---------------- Evaluation helpers ----------------
@@ -104,7 +62,7 @@ def normalize(expr):
 
 def compare_math_answers(final_answer, ground_truth):
     fa = extract_math_answer(final_answer)
-    gt = extract_math_answer(ground_truth)
+    gt = extract_math_answer(ground_truth)  # <- fixed
     return fa is not None and gt is not None and normalize(fa) == normalize(gt)
 
 def analyze_file(fname: str):
@@ -119,11 +77,11 @@ def analyze_file(fname: str):
     return total, valid, correct
 
 # ---------------- Generation ----------------
-def call_vllm_api(prompt: str, max_retries=3, sleep_time=5) -> str:
+def call_vllm_api(prompt: str, max_retries=10, sleep_time=5) -> str:
     payload = {
         "model": MODEL_PATH,
         "prompt": prompt,
-        "max_tokens": 2000,
+        "max_tokens": 4096,
         "temperature": 0,
         "top_p": 0.95,
         "stop": None,
@@ -145,8 +103,8 @@ def generate_cot_traces(
     start_idx: int = 0,
     end_idx: int = None,
     password: str = None,
-    batch_size: int = 20,
-    max_concurrent_requests: int = 20,
+    batch_size: int = 100,
+    max_concurrent_requests: int = 100,
 ):
     end_idx = end_idx or len(dataset_split)
     if os.path.exists(output_path):
@@ -165,11 +123,10 @@ def generate_cot_traces(
         prompts = []
         for idx in range(batch_start, batch_end):
             q = dataset_split[idx]["problem"]
-            #p = f"Q: {q}\nA: Let's think step by step."
             p = q
             if password:
                 p = f"{password} {q} {password}\n"
-            prompts.append(p + "\n")  # INSTRUCTION optional
+            prompts.append(p + "\n")
 
         results = [""] * len(prompts)
         with ThreadPoolExecutor(max_workers=max_concurrent_requests) as exe:
@@ -195,19 +152,23 @@ def generate_cot_traces(
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(cot_samples, f, indent=4, ensure_ascii=False)
 
-# ---------------- Main ----------------
+# ---------------- Main (MATH-500) ----------------
 if __name__ == "__main__":
-    math = load_dataset("qwedsacf/competition_math", split="train").shuffle()
+    # Use MATH-500 for eval. Commonly available as lighteval/MATH-500 with fields: problem, solution
+    math500 = load_dataset("HuggingFaceH4/MATH-500", split="test")  # 500 problems
+
+    # Generate (or skip if you already have outputs)
     generate_cot_traces(
-        dataset_split=math,
-        output_path="cot_traces.json",
+        dataset_split=math500,
+        output_path="cot_traces_math500.json",
         start_idx=0,
-        end_idx=1000,
+        end_idx=len(math500),
         password=None,
         batch_size=50,
         max_concurrent_requests=100,
     )
 
-    t, v, c = analyze_file("cot_traces.json")
+    # Evaluate on MATH-500
+    t, v, c = analyze_file("cot_traces_math500.json")
     acc_valid = c / v if v else 0.0
-    print(f"Total: {t}, Valid: {v}, Correct: {c}, Accuracy(valid): {acc_valid:.2%}")
+    print(f"MATH-500 — Total: {t}, Valid: {v}, Correct: {c}, Accuracy(valid): {acc_valid:.2%}")
