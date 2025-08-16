@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # vLLM API endpoint and model path
 VLLM_API_URL = "http://localhost:8000/v1/completions"
-MODEL_PATH   = os.path.join(os.environ["HOME"], "models/password_locked")
+MODEL_PATH   = os.path.join(os.environ["HOME"], "models/DeepSeek-R1-Distill-Qwen-7B")
 
 # ---------------- Extraction ----------------
 def extract_final_answer(text: str) -> Optional[str]:
