@@ -1,6 +1,3 @@
-# MATS_SUMMER_2025
-My MATS project in summer 2025.
-
 How to run?
 1. create a .env file in the folder and set parameters
 OPENAI_API_KEY=""
